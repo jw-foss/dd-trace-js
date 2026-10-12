@@ -72,7 +72,13 @@ class DatabasePlugin extends StoragePlugin {
    * @param {object} peerData
    */
   #getDbmServiceName (tracerService, peerData) {
-    if (this._tracerConfig.spanComputePeerService) {
+    // Only an explicitly-set `peer.service` may replace the configured database service. A peer
+    // service computed from a precursor (`db.name`, `out.host`, ...) must not: it would silently
+    // reattribute DBM events to the database name, and it is deliberately withheld from `ddprs`
+    // for the same reason (see `#createDBMPropagationCommentService`). Optional chaining also
+    // keeps a span with no precursor tag from throwing here.
+    if (this._tracerConfig.spanComputePeerService &&
+        peerData?.[PEER_SERVICE_SOURCE_KEY] === PEER_SERVICE_KEY) {
       return this.getPeerServiceRemap(peerData)[PEER_SERVICE_KEY] || tracerService
     }
     return tracerService
